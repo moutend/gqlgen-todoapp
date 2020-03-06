@@ -1,0 +1,9 @@
+version: "3"
+services:
+  db:
+    image: mysql:5.7
+    container_name: todoapp-database
+    environment:
+      MYSQL_ROOT_PASSWORD: abcdef123456
+    ports:
+      - "33306:3306"

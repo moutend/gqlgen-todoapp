@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS `task` (
+  id INT NOT NULL UNIQUE AUTO_INCREMENT,
+  title VARCHAR (256) ,
+  content VARCHAR (1024) ,
+  user_id INT NOT NULL,
+
+  created_at DATETIME(3) NOT NULL,
+  updated_at DATETIME(3) NOT NULL,
+  deleted_at DATETIME(3) DEFAULT NULL,
+
+  FOREIGN KEY (user_id) REFERENCES user(ID) ,
+  PRIMARY KEY (id)
+) ENGINE = InnoDB ROW_FORMAT = DYNAMIC CHARSET = utf8mb4 COLLATE utf8mb4_bin;

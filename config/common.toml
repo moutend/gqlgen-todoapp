@@ -1,0 +1,14 @@
+[mysql]
+host = "127.0.0.1"
+port = 33306
+user = "root"
+pass = "abcdef123456"
+dbname = "todoapp"
+sslmode = "false"
+
+[web]
+host = "localhost"
+port = 8080
+
+[migration]
+path = "file://migrations/mysql"
