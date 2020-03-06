@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	dbmodel "github.com/moutend/gqlgen-todoapp/internal/db/model"
-	database "github.com/moutend/gqlgen-todoapp/internal/db/mysql"
 	"github.com/moutend/gqlgen-todoapp/internal/jwt"
+	"github.com/moutend/gqlgen-todoapp/internal/middleware/db"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -22,50 +22,48 @@ type contextKey struct {
 func Middleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			c, err := r.Cookie("TOKEN")
-
-			if err != nil || c == nil {
-				log.Println(err)
-
-				next.ServeHTTP(w, r)
-				return
-			}
-
-			token := c.Value
-			username, err := jwt.ParseToken(token)
-
-			if err != nil {
-				log.Println(err)
-				http.Error(w, "Invalid token", http.StatusForbidden)
-				return
-			}
-
-			tx, err := database.Db.Begin()
-
-			if err != nil {
-				log.Println(err)
-				http.Error(w, "Invalid token", http.StatusForbidden)
-				return
-			}
-
 			defer func() {
-				if err != nil {
-					tx.Rollback()
-				} else {
-					tx.Commit()
+				if r := recover(); r != nil {
+					log.Println("auth:", r)
+					http.Error(w, `{"errors":[{"message":"access denied","path":[]}],"data":null}`, http.StatusForbidden)
 				}
 			}()
 
-			user, err := dbmodel.Users(dbmodel.UserWhere.Name.EQ(username)).One(r.Context(), tx)
+			c, err := r.Cookie("TOKEN")
 
-			if err != nil {
-				log.Println(err)
+			if err != nil || c == nil {
+				log.Println("auth:", err)
+
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), userCtxKey, user)
-			r = r.WithContext(ctx)
+			name, err := jwt.ParseToken(c.Value)
+
+			if err != nil {
+				log.Println("auth:", err)
+				http.Error(w, `{"errors":[{"message":"invalid token","path":[]}],"data":null}`, http.StatusForbidden)
+				return
+			}
+
+			tx := db.ForContext(r.Context())
+
+			if tx == nil {
+				log.Println("auth: internal error")
+				http.Error(w, `{"errors":[{"message":"internal error","path":[]}],"data":null}`, http.StatusForbidden)
+				return
+			}
+
+			user, err := dbmodel.Users(dbmodel.UserWhere.Name.EQ(name)).One(r.Context(), tx)
+
+			if err != nil {
+				log.Println("auth:", err)
+				http.Error(w, `{"errors":[{"message":"internal error","path":[]}],"data":null}`, http.StatusForbidden)
+				return
+			}
+
+			r = r.WithContext(context.WithValue(r.Context(), userCtxKey, user))
+
 			next.ServeHTTP(w, r)
 		})
 	}

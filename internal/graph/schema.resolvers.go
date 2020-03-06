@@ -4,7 +4,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/moutend/gqlgen-todoapp/internal/graph/generated"
 	"github.com/moutend/gqlgen-todoapp/internal/graph/model"
@@ -28,7 +27,6 @@ func (r *mutationResolver) RefreshToken(ctx context.Context, input model.Refresh
 
 func (r *queryResolver) Tasks(ctx context.Context) ([]*model.Task, error) {
 	return r.tasks(ctx)
-	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
